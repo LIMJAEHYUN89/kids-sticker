@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="칭찬스티커"><meta name="theme-color" content="#ff9eb5">
+<title>칭찬스티커</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#fff7f0;color:#333;padding:env(safe-area-inset-top) 12px 40px}
+h1{text-align:center;font-size:22px;margin:14px 0}.tabs{display:flex;gap:8px;margin-bottom:12px}
+.tabs button{flex:1;padding:12px;border:0;border-radius:14px;font-size:17px;font-weight:700;background:#eee}
+.tabs button.on{background:var(--c);color:#fff}.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 6px #0001}
+h2{font-size:17px;margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cell{aspect-ratio:1;border-radius:50%;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;font-size:28px}
+.cell.f{border:0;background:#fff2b3}.row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button.b{padding:10px 14px;border:0;border-radius:12px;background:var(--c);color:#fff;font-size:15px;font-weight:600}
+button.g{background:#ddd;color:#333}input{padding:10px;border:1px solid #ddd;border-radius:10px;font-size:16px;flex:1;min-width:0}
+.reward{background:#fff2b3;border-radius:14px;padding:12px;text-align:center;font-weight:700;margin-top:10px;font-size:17px}
+.bal{font-size:28px;font-weight:800;text-align:center;margin:4px 0 10px}ul{list-style:none;padding:0;margin:10px 0 0}
+li{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f2f2f2;font-size:14px}.p{color:#2a9d5c}.m{color:#d9534f}
+small{color:#999}.x{background:none;border:0;color:#bbb;font-size:14px}
+</style></head><body><h1>⭐ 칭찬스티커 & 용돈 ⭐</h1><div class="tabs" id="tabs"></div><div id="app"></div>
+<script>
+const KIDS=[{n:'서연',c:'#ff7aa2'},{n:'서아',c:'#7aa8ff'}];
+let S=JSON.parse(localStorage.getItem('kids')||'null')||{};KIDS.forEach(k=>S[k.n]??={st:0,done:0,reward:'좋아하는 간식 고르기 🍦',goal:'',tx:[]});
+let cur=localStorage.getItem('cur')||'서연';const sv=()=>{localStorage.setItem('kids',JSON.stringify(S));localStorage.setItem('cur',cur)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const won=n=>n.toLocaleString('ko-KR')+'원';
+function R(){const k=KIDS.find(x=>x.n==cur),d=S[cur];document.body.style.setProperty('--c',k.c);
+tabs.innerHTML=KIDS.map(x=>`<button class="${x.n==cur?'on':''}" onclick="cur='${x.n}';sv();R()">${x.n}</button>`).join('');
+const bal=d.tx.reduce((a,t)=>a+t.a,0);
+app.innerHTML=`<div class="card"><h2>🎯 이번 주 목표</h2><div class="row" style="margin:0"><input id="goal" value="${esc(d.goal)}" placeholder="예: 매일 책 10쪽 읽기" onchange="S[cur].goal=this.value;sv()"></div></div>
+<div class="card"><h2>🌟 칭찬 스티커 (${d.st}/10) ${d.done?`<small>· 보상 ${d.done}번 받음</small>`:''}</h2>
+<div class="grid">${Array.from({length:10},(_,i)=>`<div class="cell ${i<d.st?'f':''}">${i<d.st?'⭐':''}</div>`).join('')}</div>
+${d.st>=10?`<div class="reward">🎉 10개 달성! 보상: ${esc(d.reward)}</div>`:''}
+<div class="row">${d.st<10?`<button class="b" onclick="S[cur].st++;sv();R()">⭐ 스티커 붙이기</button>`:`<button class="b" onclick="S[cur].st=0;S[cur].done++;sv();R()">보상 받고 새 판 시작</button>`}
+<button class="b g" onclick="if(S[cur].st>0){S[cur].st--;sv();R()}">하나 빼기</button></div>
+<div class="row"><input id="rw" value="${esc(d.reward)}" placeholder="보상 내용"><button class="b g" onclick="S[cur].reward=rw.value;sv();R()">보상 저장</button></div></div>
+<div class="card"><h2>💰 용돈 기록</h2><div class="bal">${won(bal)}</div>
+<div class="row"><input id="amt" type="number" inputmode="numeric" placeholder="금액"><input id="memo" placeholder="내용 (예: 주간 용돈)"></div>
+<div class="row"><button class="b" onclick="T(1)">＋ 들어옴</button><button class="b g" onclick="T(-1)">－ 씀</button></div>
+<ul>${d.tx.slice().reverse().map(t=>`<li><span>${esc(t.m||'-')} <small>${t.d}</small></span><span><b class="${t.a>0?'p':'m'}">${t.a>0?'+':''}${won(t.a)}</b> <button class="x" onclick="D(${t.id})">✕</button></span></li>`).join('')}</ul></div>`}
+function T(s){const a=parseInt(amt.value);if(!a)return;const t=new Date();S[cur].tx.push({id:Date.now(),a:s*Math.abs(a),m:memo.value,d:`${t.getMonth()+1}/${t.getDate()}`});sv();R()}
+function D(id){if(confirm('이 기록을 지울까요?')){S[cur].tx=S[cur].tx.filter(t=>t.id!=id);sv();R()}}
+R();
+</script></body></html>
